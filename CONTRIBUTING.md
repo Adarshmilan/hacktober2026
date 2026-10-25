@@ -1,70 +1,80 @@
 # Contributing to GitCompass 404
 
-Thank you for your interest in contributing to **GitCompass 404** — the Autonomous Open-Source Contributor & Maintainer Intelligence Platform powered by Google Gemma 4 (Text + Multimodal Vision).
+Thank you for your interest in contributing to **GitCompass 404**! Built with pride by **Team 404 Not Found**, GitCompass 404 is an open-source autonomous intelligence platform designed to empower newcomers and streamline maintainer operations worldwide.
 
-We welcome beginner contributors and seasoned maintainers alike.
+We welcome contributions of all levels — whether fixing typos in documentation, adding new visual architecture diagrams, expanding local model support, or writing unit tests.
 
 ---
 
-## 1. Quickstart Development Setup
+## 👥 The Core Team
 
-1. **Fork & Clone** the repository:
+**GitCompass 404** was created and is actively maintained by **Team 404 Not Found**:
+- 👑 **Team Leader**: **Parshwa**
+- 💻 **Core Engineers**: **Sakshi Sharma**, **Adarsh Milan**, **Abhishek Kumar**
+
+---
+
+## 🛠️ Quickstart Development Setup
+
+1. **Fork & Clone**:
    ```bash
-   git clone https://github.com/<your-username>/git-compass-404.git
-   cd git-compass-404
+   git clone https://github.com/Adarshmilan/hacktober2026.git
+   cd hacktober2026
    ```
+
 2. **Install Dependencies**:
    ```bash
    npm install
    ```
-3. **Configure Environment**:
-   Copy `.env.example` to `.env.local`:
+
+3. **Start Local AI Engine (Ollama)**:
+   Ensure you have [Ollama](https://ollama.com/) running locally with `gemma4:e2b`:
    ```bash
-   cp .env.example .env.local
+   ollama pull gemma4:e2b
+   ollama serve
    ```
-   Add your `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey).
-   *(Note: You can also configure or test keys at runtime via the in-app API Settings drawer).*
-4. **Start Local Development**:
+   *No external API keys are required to develop or test locally!*
+
+4. **Run the Development Server**:
    ```bash
    npm run dev
    ```
-   Open `http://localhost:3000` to inspect both the Dark Landing Page and the Light Dashboard Workspace.
+   Open **[http://localhost:3000](http://localhost:3000)** to experience both the **Dark Obsidian Landing Page** and the **Light Alabaster Workspace**.
 
 ---
 
-## 2. Architecture & Design Principles
+## 📐 Architecture & Principles
 
-- **Dual-Surface Aesthetic**:
-  - **Landing Page**: Dark Obsidian Black (`#070708` / `#0F0F12`), Brushed Silver, and subtle Warm Amber/Emerald accents.
-  - **Dashboard Workspace**: Crisp White (`#FFFFFF`) & Alabaster (`#FAFAFA`), Carbon Black (`#09090B`) interactive elements, `1px` hairline borders (`#E4E4E7`).
-- **Gemma 4 Multimodal Grounding**:
-  - All bug report triage must correlate visual error traces against real repository AST file paths.
-  - No synthetic hallucinations; cited paths must exist in the GitHub file tree.
-- **Zero Broken Imports & Strong Typing**:
-  - TypeScript strict mode enabled throughout `src/`.
-  - Validate all external JSON payloads.
+- **Zero Synthetic Hallucinations**: Every cited AST node, file path, and line range must correlate with real repository trees.
+- **Dual-Surface Visual Excellence**:
+  - Landing surface: Obsidian black (`#070708` / `#0F0F12`), hairline accents, live interactive telemetry.
+  - Workspace surface: High-craft architectural alabaster (`#FFFFFF` / `#FAFAFA`), clean hairline borders (`#E4E4E7`).
+- **Strict TypeScript & Zod Guardrails**:
+  - Strict mode enabled across all `/src` modules.
+  - All API routes strictly validate schemas using Zod.
 
 ---
 
-## 3. Pull Request Guidelines
+## 📋 Pull Request & Commit Guidelines
 
-1. **Conventional Commits**: Format commit titles and PR titles according to the standard:
-   - `feat(triage): add drag-and-drop file upload for multimodal screenshots`
-   - `fix(github): improve rate-limit fallback headers`
-   - `docs(readme): add Gemma 4 architecture flow diagram`
-2. **Pre-commit Verification**:
-   Before submitting your PR, ensure compilation passes cleanly:
+1. **Conventional Commits**:
+   - `feat(triage): add paste buffer support for error screenshots`
+   - `fix(github): handle rate-limit retry gracefully`
+   - `docs(readme): add Ollama local execution benchmarks`
+2. **Pre-flight Checks**:
+   Always run and verify:
    ```bash
    npm run typecheck
+   npm run lint
    npm run build
    ```
-3. **PR Description**:
-   Include a clear summary of changes, linked issue references, and a verification plan. (Feel free to use GitCompass 404's own **PR Builder** tab to draft it!).
+3. **Use GitCompass 404 to Open Your PR!**:
+   Navigate to **Tab 04 (PR Description & Rules Helper)** in the app, paste your `git diff`, and let GitCompass 404 generate your compliant PR description!
 
 ---
 
-## 4. Code of Conduct
+## 🤝 Code of Conduct
 
-Please treat everyone with respect, kindness, and empathy. Harassment or offensive comments will not be tolerated.
+We are dedicated to providing a welcoming, diverse, and inclusive environment. Please treat all contributors with kindness, dignity, and respect.
 
-Happy hacking! 🚀
+Distributed under the **MIT License**. Copyright (c) 2026 **Team 404 Not Found**.

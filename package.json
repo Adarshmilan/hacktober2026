@@ -1,8 +1,9 @@
 {
-  "name": "repo-helper",
-  "version": "0.1.0",
+  "name": "gitcompass-404",
+  "version": "1.0.0",
   "private": true,
-  "description": "Helps beginners contribute to open source using Gemma through the Gemini API.",
+  "description": "GitCompass 404 — Autonomous Open-Source Contributor & Maintainer Intelligence powered by Local Google Gemma 4 (Ollama) & Google Gemini API.",
+  "author": "Team 404 Not Found (Parshwa, Sakshi Sharma, Adarsh Milan, Abhishek Kumar)",
   "license": "MIT",
   "engines": {
     "node": ">=20.9.0"
