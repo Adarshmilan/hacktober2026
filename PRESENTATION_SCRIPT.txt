@@ -1,0 +1,181 @@
+================================================================================
+           GITCOMPASS 404 — 4-MINUTE LIVE DEMO PRESENTATION SCRIPT
+================================================================================
+Project:      GitCompass 404 (Autonomous Contributor & Maintainer Intelligence)
+Team:         Team 404 Not Found
+Team Leader:  Parshwa
+Team Members: Sakshi Sharma, Adarsh Milan, Abhishek Kumar
+AI Engine:    Local Google Gemma 4 (gemma4:e2b) via Ollama (100% Offline & Free)
+Target Time:  4 Minutes Exactly (240 Seconds)
+================================================================================
+
+--------------------------------------------------------------------------------
+STAGE SETUP BEFORE YOU BEGIN:
+--------------------------------------------------------------------------------
+1. Open Chrome/Edge in Full Screen mode (Press F11) at: http://localhost:3000
+2. Ensure Ollama is running in background (http://localhost:11434 with gemma4:e2b).
+3. Have an error screenshot ready on your desktop for Tab 03 (or click the sample).
+4. Take a deep breath, smile, speak loud, clear, and with full confidence!
+
+================================================================================
+PART 1: THE HOOK, PROBLEM & LOCAL GEMMA 4 FLEX
+Time: [0:00 - 0:45] (45 Seconds)
+================================================================================
+
+[SCREEN ACTION]:
+- Show the Dark Obsidian Animated Landing Page (http://localhost:3000).
+- Move mouse gently over the hero headline and interactive Bento Grid.
+
+[SPEAK]:
+"Good morning everyone! We are Team 404 Not Found — led by me, Parshwa, along
+with my incredible teammates Sakshi Sharma, Adarsh Milan, and Abhishek Kumar.
+
+Every single day, millions of developers want to contribute to open-source,
+but they face an intimidating wall: massive 50,000-file repositories with zero
+idea where execution begins. Meanwhile, open-source maintainers are drowning
+in broken, one-line bug reports like 'it doesn't work', and malformed pull
+requests that violate basic merge rules.
+
+Today, we built the bridge for both sides: GitCompass 404 — the Autonomous
+Open-Source Contributor and Maintainer Intelligence Platform.
+
+And here is our biggest technical flex:
+Everything you are about to witness today is running 100% LOCALLY on this
+laptop, powered by Google Gemma 4 via Ollama. Zero external API keys, zero cloud
+latency, completely private, and running completely offline!"
+
+================================================================================
+PART 2: LIVE DEMO — TAB 01: ARCHITECTURE MAP & ENTRY FILES
+Time: [0:45 - 1:30] (45 Seconds)
+================================================================================
+
+[SCREEN ACTION]:
+- In the top header bar, click the preset chip: 'facebook/react' (or click 'Launch Workspace').
+- Smoothly transition into the Light Architectural Workspace.
+- Point your cursor to the top live Telemetry Bar and the 3 Subsystem Layers.
+
+[SPEAK]:
+"Let's dive straight into the live demo!
+
+We feed GitCompass a repository link like facebook/react. Notice our live
+telemetry strip at the top — local Gemma 4 immediately indexes the repository
+tree and documentation.
+
+Under Tab 01: Repo Explainer & Architecture Map, instead of forcing a beginner
+to read tens of thousands of lines, Gemma 4 decomposes the entire project into
+visual architectural layers:
+  - Layer 1: Public Surface & Ingestion Gateways
+  - Layer 2: Core Processing Engine Subsystems
+  - Layer 3: Shared Platform Primitives
+
+Even better: look right here — Gemma 4 pinpoints the Top 3 Beginner-Friendly
+Entry Files with exact line counts and direct clickable links to GitHub.
+A newcomer knows exactly which file to clone and edit within their first 60 seconds!"
+
+================================================================================
+PART 3: LIVE DEMO — TAB 02: ISSUE GEMS & TAB 03: MULTIMODAL BUG TRIAGE
+Time: [1:30 - 2:30] (60 Seconds) — *THE STAR FEATURE*
+================================================================================
+
+[SCREEN ACTION]:
+- Click Tab 02: '02 Good-First-Issue Finder'. Scroll down quickly to highlight the 'UNLABELED GEM' green badge.
+- Then immediately click Tab 03: '03 Screenshot → Bug Report'.
+- Upload or paste an error screenshot (or click the sample card) and click 'Analyze Error Screenshot'.
+- Show the visual OCR callstack parsing and the correlated AST nodes.
+
+[SPEAK]:
+"Next, in Tab 02: Good-First-Issue Finder, our engine analyzes open issues and
+detects 'Unlabeled Beginner Gems' — issues that maintainers forgot to label, but
+which local Gemma 4 identifies as low-cognitive-load with an actionable 3-step plan.
+
+Now, for our flagship innovation in Tab 03: Multimodal Screenshot-to-Bug-Report!
+
+Imagine a user experiences a runtime crash in production. Instead of filing a
+vague, useless issue, they simply upload or paste an error screenshot.
+
+Local Gemma 4's multimodal vision engine reads the image directly:
+It performs Optical Character Recognition on the callstack, correlates the visual
+error with the real repository file tree, and identifies the exact culprit file
+and line range!
+
+It automatically drafts a complete, reproducible GitHub Bug Report, and gives us
+a one-click 'Create Issue on GitHub' button with the entire payload prefilled!"
+
+================================================================================
+PART 4: LIVE DEMO — TAB 04: PR HELPER & TAB 05: EXECUTIVE PDF DOSSIER
+Time: [2:30 - 3:15] (45 Seconds)
+================================================================================
+
+[SCREEN ACTION]:
+- Click Tab 04: '04 PR Description & Rules Helper'.
+- Show the 4-point green compliance checklist (Conventional Commits, Linked Issue, Test Plan).
+- Then click Tab 05: '05 Executive Dossier & PDF'.
+- Click the black 'Download PDF Report' button to open the instant print preview sheet.
+
+[SPEAK]:
+"Once you've written your code, how do you make sure the maintainer won't reject
+your pull request?
+
+In Tab 04, you paste your git diff. GitCompass reads the target repository's
+real CONTRIBUTING.md guidelines and runs an automated 4-point compliance check:
+Conventional Commit titles, linked issue directives, verification test plans,
+and regression guardrails.
+
+Finally, in Tab 05: Executive Dossier, maintainers and engineering leads can
+generate an instant, printable PDF Diagnostic Report with one single click!
+It compiles repository onboarding health, visual architecture maps, and open
+triage status into a boardroom-ready document."
+
+================================================================================
+PART 5: ARCHITECTURE, OLLAMA VERIFICATION & CLOSING PUNCHLINE
+Time: [3:15 - 4:00] (45 Seconds)
+================================================================================
+
+[SCREEN ACTION]:
+- Click the 'API Settings' button in the header or sidebar.
+- Show the green active status banner:
+  '● Local Ollama Active: gemma4:e2b (Connected)'
+- Click 'Test Connection ↻' to demonstrate instant sub-second verification.
+- Return to the landing page or keep workspace visible.
+
+[SPEAK]:
+"Look inside our settings panel:
+Local Ollama Active: gemma4:e2b. Connected at localhost:11434.
+No subscription fees, no rate limits, 100% private.
+
+To conclude:
+GitCompass 404 empowers first-time contributors to make their first pull request
+with complete confidence, while saving open-source maintainers hundreds of hours
+of tedious triage every single week.
+
+Engineered with passion for the global open-source community by Team 404 Not Found:
+Parshwa, Sakshi, Adarsh, and Abhishek.
+
+Thank you so much, and we are excited to take your questions!"
+
+================================================================================
+               POTENTIAL JUDGE QUESTIONS & BULLETPROOF ANSWERS
+================================================================================
+
+Q1: "How does the multimodal screenshot feature work without sending images to the cloud?"
+A1: "We use Ollama's native multimodal API with gemma4:e2b. We encode the uploaded
+     screenshot as a base64 tensor array and pass it directly to the local model on
+     port 11434. Gemma 4 reads the visual pixels, performs OCR on the stack trace,
+     and returns structured JSON without any byte ever leaving this machine."
+
+Q2: "What happens if a repo doesn't have a CONTRIBUTING.md file?"
+A2: "GitCompass has a smart detection algorithm. If no CONTRIBUTING.md exists, it
+     automatically falls back to universal open-source standards — Conventional
+     Commits, test plan specifications, and clean scope verification — ensuring
+     every PR is clean and structured regardless of repo setup."
+
+Q3: "How do you prevent AI hallucinations in file paths?"
+A3: "We use Grounded AST Verification. Every suspected file and line citation
+     returned by the model is cross-referenced in memory against the actual recursive
+     GitHub file tree. If a path doesn't exist, it is filtered out."
+
+Q4: "Can this scale to massive production codebases?"
+A4: "Yes! We implement in-memory caching with TTL, URL segment escaping, and
+     tree pruning that caps ingestion to the top architectural directories so
+     even 50,000-file repos like next.js or react process in seconds."
+================================================================================
