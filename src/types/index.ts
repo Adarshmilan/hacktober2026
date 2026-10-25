@@ -105,3 +105,130 @@ export interface ContributingDocs {
   issueTemplates: RepoFile[];
   pullRequestTemplate: RepoFile | null;
 }
+
+// -------------------------------------------------------------
+// OpenCompass High-Craft Architecture & UI Types
+// -------------------------------------------------------------
+
+export interface RepoMetadata {
+  owner: string;
+  repo: string;
+  url: string;
+  branch: string;
+  stars: number;
+  openIssuesCount: number;
+  license: string;
+  hasContributing: boolean;
+  repoOnboardingScore: number;
+  compatibilityBadge: string;
+  description?: string;
+}
+
+export interface ASTNodeMatch {
+  filePath: string;
+  matchScore: number;
+  badgeLabel: string;
+  badgeVariant: "crimson" | "zinc" | "emerald";
+  description: string;
+  lineRange?: string;
+  functionName?: string;
+}
+
+export interface BugReportDraft {
+  issueTitle: string;
+  screenshotName: string;
+  resolution: string;
+  ocrConfidence: string;
+  ocrStatus: string;
+  errorType: string;
+  errorMessage: string;
+  callstack: string[];
+  reproducerContext: string;
+  targetTemplate: string;
+  summaryEvidence: {
+    text: string;
+    codePills: string[];
+  };
+  stepsToReproduce: string[];
+  expectedBehavior: string;
+  actualBehavior: string;
+  correlatedNodes: ASTNodeMatch[];
+}
+
+export interface DirectoryExplainer {
+  path: string;
+  title: string;
+  description: string;
+  fileCount?: string;
+  importance: "high" | "medium" | "low";
+}
+
+export interface RecommendedFile {
+  path: string;
+  githubUrl: string;
+  role: string;
+  whyStartHere: string;
+  lines: number;
+  difficulty: "Beginner" | "Intermediate";
+}
+
+export interface GoodFirstIssue {
+  id: number;
+  number: number;
+  title: string;
+  htmlUrl: string;
+  difficulty: "1/5 (Beginner)" | "2/5 (Easy)" | "3/5 (Medium)" | "4/5 (Challenging)" | "5/5 (Hard)";
+  clarityScore: number;
+  isUnlabeledGem: boolean;
+  category: "Frontend" | "Docs" | "Backend" | "Infra";
+  plainExplanation: string;
+  suspectedFiles: string[];
+  starterSteps: string[];
+  labels: string[];
+}
+
+export interface PRComplianceCheck {
+  id: string;
+  label: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface PRDraft {
+  title: string;
+  body: string;
+  checks: PRComplianceCheck[];
+  suspectedFiles: string[];
+  diffPreview: string;
+}
+
+export interface AppSettings {
+  geminiApiKey: string;
+  githubToken: string;
+  gemmaModel: string;
+}
+
+export interface ArchitectureLayer {
+  layerNumber: string;
+  name: string;
+  tagline: string;
+  files: string[];
+  role: string;
+}
+
+export interface ArchitectureMapData {
+  paradigm: string;
+  flowDescription: string;
+  layers: ArchitectureLayer[];
+}
+
+export interface TelemetryMetrics {
+  activeModel: string;
+  visionSubsystem: string;
+  latencyMs: number;
+  tokensProcessed: number;
+  astNodesIndexed: number;
+  rateLimitRemaining: number;
+  contributingFound: boolean;
+}
+

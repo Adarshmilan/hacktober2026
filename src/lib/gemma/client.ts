@@ -9,11 +9,16 @@ import { getEnv } from "@/lib/config/env";
 
 let client: GoogleGenAI | undefined;
 
-export function getGemmaClient(): GoogleGenAI {
+export function getGemmaClient(customApiKey?: string): GoogleGenAI {
+  const apiKey = customApiKey || getEnv().GEMINI_API_KEY || "";
+  if (customApiKey) {
+    return new GoogleGenAI({
+      apiKey: customApiKey,
+      httpOptions: { timeout: 60_000, retryOptions: { attempts: 2 } },
+    });
+  }
   client ??= new GoogleGenAI({
-    apiKey: getEnv().GEMINI_API_KEY,
-    // The SDK default retries up to 5 times with long backoff, which would leave
-    // users waiting minutes. generate-json does its own single repair retry.
+    apiKey,
     httpOptions: { timeout: 60_000, retryOptions: { attempts: 2 } },
   });
   return client;

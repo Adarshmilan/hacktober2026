@@ -21,7 +21,7 @@ import type { GitHubIssue, IssuesData, IssuesRequest } from "@/types";
 const BATCH_SIZE = 15;
 const BUDGET = { issues: 18_000, tree: 5_000 } as const;
 const BEGINNER_LABEL =
-  /good.?first|beginner|easy|first.?timers|starter|help.?wanted|hacktoberfest|documentation|\bdocs?\b/i;
+  /good.?first|beginner|easy|first.?timers|starter|help.?wanted|documentation|\bdocs?\b/i;
 const DIFFICULTY_ORDER = { easy: 0, medium: 1, hard: 2 } as const;
 const cache = new MemoryCache<IssuesData>({ ttlMs: 10 * 60_000, maxEntries: 100 });
 

@@ -1,69 +1,70 @@
-# Contributing
+# Contributing to GitCompass 404
 
-Thanks for helping! This project exists to make first contributions easier, so first-timers are
-very welcome here.
+Thank you for your interest in contributing to **GitCompass 404** — the Autonomous Open-Source Contributor & Maintainer Intelligence Platform powered by Google Gemma 4 (Text + Multimodal Vision).
 
-## Setup
+We welcome beginner contributors and seasoned maintainers alike.
 
-1. Fork the repository and clone your fork.
-2. Install dependencies: `npm install` (Node.js 20.9 or newer).
-3. Copy `.env.example` to `.env.local` and add your own `GEMINI_API_KEY` and `GEMMA_MODEL`
-   (see the README for where to get them). Never commit `.env.local`.
-4. Start the app: `npm run dev`.
+---
 
-## Branches and pull requests
+## 1. Quickstart Development Setup
 
-- Branch from `main` with a short descriptive name, such as `fix/issue-list-empty-state` or
-  `feat/explain-file`.
-- Keep each PR focused on one change. Link the issue it closes (`Closes #123`).
-- Before opening a PR, make sure all of these pass:
-  ```bash
-  npm run lint && npm run typecheck && npm test && npm run build
-  ```
-- Fill in the pull request template. You can even use the app's own **PR helper** tab to draft it.
+1. **Fork & Clone** the repository:
+   ```bash
+   git clone https://github.com/<your-username>/git-compass-404.git
+   cd git-compass-404
+   ```
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Configure Environment**:
+   Copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Add your `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/apikey).
+   *(Note: You can also configure or test keys at runtime via the in-app API Settings drawer).*
+4. **Start Local Development**:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` to inspect both the Dark Landing Page and the Light Dashboard Workspace.
 
-## Code style
+---
 
-- **TypeScript strict mode, no `any`.** Validate external data with Zod.
-- **One responsibility per file**, roughly 200 lines at most. Split larger files.
-- **Imports use the `@/` alias** (`@/lib/...`), never relative paths. ESLint enforces this.
-- **Every file starts with a header comment** saying what it does, what it exports and what it
-  depends on.
-- Names: files in kebab-case, React components in PascalCase, shared types in `src/types/`.
-- Comments explain _why_, not _what_. No dead code or leftover TODOs.
-- Prettier formats everything: run `npm run format`.
+## 2. Architecture & Design Principles
 
-## Security rules for contributors
+- **Dual-Surface Aesthetic**:
+  - **Landing Page**: Dark Obsidian Black (`#070708` / `#0F0F12`), Brushed Silver, and subtle Warm Amber/Emerald accents.
+  - **Dashboard Workspace**: Crisp White (`#FFFFFF`) & Alabaster (`#FAFAFA`), Carbon Black (`#09090B`) interactive elements, `1px` hairline borders (`#E4E4E7`).
+- **Gemma 4 Multimodal Grounding**:
+  - All bug report triage must correlate visual error traces against real repository AST file paths.
+  - No synthetic hallucinations; cited paths must exist in the GitHub file tree.
+- **Zero Broken Imports & Strong Typing**:
+  - TypeScript strict mode enabled throughout `src/`.
+  - Validate all external JSON payloads.
 
-- Read secrets only through `src/lib/config/env.ts`. Never import it (or anything that imports it)
-  into client components.
-- Never fetch a URL that came from user input. GitHub calls go through `lib/github/client.ts`.
-- Wrap all repo, issue, diff and user text with `wrapUntrusted()` before it goes into a prompt.
-- Log only through `lib/utils/logger.ts`, and never log prompts, user text or images.
-- Render model output as text. Do not use `dangerouslySetInnerHTML`.
+---
 
-## Adding a new feature
+## 3. Pull Request Guidelines
 
-1. **Schemas:** add the request schema to `src/schemas/requests.ts` and the model output schema to
-   `src/schemas/responses.ts`, then export the inferred types from `src/types/index.ts`.
-2. **Prompt:** create `src/lib/gemma/prompts/<feature>.ts` using `buildSystemPrompt()` from
-   `shared.ts`, so the security and grounding rules are always included.
-3. **Service:** create `src/lib/services/<feature>-service.ts`. Fetch data, wrap untrusted text,
-   call `generateJson()` and check any cited paths with `createPathResolver()`.
-4. **Route:** add `src/app/api/<feature>/route.ts` using `withRoute()` and `parseJsonBody()`.
-   Keep it under 40 lines.
-5. **UI:** add a result component in `src/components/results/` and a tab in `src/app/page.tsx`.
-6. **Tests:** add Vitest tests in `tests/` for any pure logic.
+1. **Conventional Commits**: Format commit titles and PR titles according to the standard:
+   - `feat(triage): add drag-and-drop file upload for multimodal screenshots`
+   - `fix(github): improve rate-limit fallback headers`
+   - `docs(readme): add Gemma 4 architecture flow diagram`
+2. **Pre-commit Verification**:
+   Before submitting your PR, ensure compilation passes cleanly:
+   ```bash
+   npm run typecheck
+   npm run build
+   ```
+3. **PR Description**:
+   Include a clear summary of changes, linked issue references, and a verification plan. (Feel free to use GitCompass 404's own **PR Builder** tab to draft it!).
 
-## Good first issues
+---
 
-Looking for somewhere to start? These are great first contributions:
+## 4. Code of Conduct
 
-- Add tests for `memory-cache.ts` and `verify-paths.ts`.
-- Show a "copied" toast that screen readers announce more clearly.
-- Add another output language (prompt name, language schema and dropdown option).
-- Add a "Clear" button to each tab's form.
-- Improve the empty state of the issue finder with a link to the repo's issues page.
+Please treat everyone with respect, kindness, and empathy. Harassment or offensive comments will not be tolerated.
 
-Issues labeled `good first issue` on GitHub are kept up to date. Comment on one before starting so
-nobody duplicates work.
+Happy hacking! 🚀

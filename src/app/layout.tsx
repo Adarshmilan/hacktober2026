@@ -1,25 +1,22 @@
-/**
- * Root layout for the whole app.
- * Exports: RootLayout (default), metadata.
- * Depends on: next (types), @/app/globals.css.
- *
- * Uses a system font stack instead of next/font so builds never need network
- * access and Hindi/Gujarati text renders with the OS fonts.
- */
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import "@/app/globals.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OpenSource Contributor Helper",
+  title: "GitCompass 404 — Autonomous Open-Source Contributor & Maintainer Intelligence",
   description:
-    "Understand a GitHub repo, find good first issues, turn screenshots into bug reports, and write PR descriptions with Gemma.",
+    "The Autonomous Open-Source Contributor & Maintainer Intelligence Platform powered by Google Gemma 4. Multimodal visual bug reports, codebase mapping, issue ranking, and PR compliance.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full bg-zinc-50 text-zinc-950 font-sans selection:bg-zinc-900 selection:text-white">
+        {children}
+      </body>
     </html>
   );
 }

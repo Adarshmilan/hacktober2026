@@ -17,17 +17,18 @@ const blankToUndefined = (value: unknown) =>
 const envSchema = z.object({
   GEMINI_API_KEY: z.preprocess(
     blankToUndefined,
-    z.string({ error: "GEMINI_API_KEY is required. See .env.example." }).min(1),
+    z.string().min(1).optional(),
   ),
   GEMMA_MODEL: z.preprocess(
     // The models API prints names as "models/gemma-...", so accept that form too.
     (value) => {
       const blank = blankToUndefined(value);
-      return typeof blank === "string" ? blank.trim().replace(/^models\//, "") : blank;
+      return typeof blank === "string" ? blank.trim().replace(/^models\//, "") : "gemma-4-26b-a4b-it";
     },
     z
-      .string({ error: "GEMMA_MODEL is required. See .env.example." })
-      .regex(/^gemma-[a-z0-9.-]+$/, "GEMMA_MODEL must be a Gemma model name like gemma-x-yb-it."),
+      .string()
+      .regex(/^gemma-[a-z0-9.-]+$/, "GEMMA_MODEL must be a Gemma model name like gemma-x-yb-it.")
+      .default("gemma-4-26b-a4b-it"),
   ),
   GITHUB_TOKEN: z.preprocess(blankToUndefined, z.string().min(1).optional()),
   MAX_IMAGE_MB: z.preprocess(blankToUndefined, z.coerce.number().positive().max(20).default(4)),

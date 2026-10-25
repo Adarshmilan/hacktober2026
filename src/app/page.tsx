@@ -1,187 +1,284 @@
-/**
- * Home page: shared repo input, four feature tabs and their results.
- * Exports: HomePage (default).
- * Depends on: react, @/components/*, @/lib/client/*, @/lib/github/parse-repo-url, @/types.
- */
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { DiffInput } from "@/components/forms/DiffInput";
-import { ImageUpload } from "@/components/forms/ImageUpload";
-import { INPUT_CLASS, RepoInput } from "@/components/forms/RepoInput";
-import { FeatureTabs } from "@/components/layout/FeatureTabs";
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
-import { BugReportResult } from "@/components/results/BugReportResult";
-import { ExplainerResult } from "@/components/results/ExplainerResult";
-import { IssueList } from "@/components/results/IssueList";
-import { PrResult } from "@/components/results/PrResult";
-import { Button } from "@/components/ui/Button";
-import { RequestStatus } from "@/components/ui/RequestStatus";
-import { getJson, postForm, postJson } from "@/lib/client/api-client";
-import { useApiRequest } from "@/lib/client/use-api-request";
-import { REQUEST_LIMITS } from "@/lib/config/limits";
-import { parseRepoUrl } from "@/lib/github/parse-repo-url";
-import type * as T from "@/types";
+import React, { useState, useEffect } from "react";
+import { Header } from "@/components/Header";
+import { Sidebar } from "@/components/Sidebar";
+import { TelemetryStrip } from "@/components/TelemetryStrip";
+import { BugReportTab } from "@/components/tabs/BugReportTab";
+import { RepoExplainerTab } from "@/components/tabs/RepoExplainerTab";
+import { GoodFirstIssueTab } from "@/components/tabs/GoodFirstIssueTab";
+import { PRHelperTab } from "@/components/tabs/PRHelperTab";
+import { PdfReportTab } from "@/components/tabs/PdfReportTab";
+import { SettingsModal } from "@/components/SettingsModal";
+import { LandingPage } from "@/components/LandingPage";
+import {
+  DEFAULT_REPO,
+  DEFAULT_BUG_REPORT,
+  DEFAULT_DIRECTORIES,
+  DEFAULT_RECOMMENDED_FILES,
+  DEFAULT_GOOD_FIRST_ISSUES,
+} from "@/lib/constants";
+import {
+  RepoMetadata,
+  BugReportDraft,
+  DirectoryExplainer,
+  RecommendedFile,
+  GoodFirstIssue,
+  AppSettings,
+  ArchitectureMapData,
+} from "@/types";
 
-type TabId = "explain" | "issues" | "bug" | "pr";
+export default function Home() {
+  const [viewMode, setViewMode] = useState<"landing" | "workspace">("landing");
+  const [repoUrl, setRepoUrl] = useState<string>("https://github.com/vercel/next.js");
+  const [metadata, setMetadata] = useState<RepoMetadata>(DEFAULT_REPO);
+  const [report, setReport] = useState<BugReportDraft>(DEFAULT_BUG_REPORT);
+  const [directories, setDirectories] = useState<DirectoryExplainer[]>(DEFAULT_DIRECTORIES);
+  const [recommendedFiles, setRecommendedFiles] = useState<RecommendedFile[]>(DEFAULT_RECOMMENDED_FILES);
+  const [issues, setIssues] = useState<GoodFirstIssue[]>(DEFAULT_GOOD_FIRST_ISSUES);
+  const [architectureMap, setArchitectureMap] = useState<ArchitectureMapData | undefined>(undefined);
 
-const TABS = [
-  { id: "explain", label: "Explain repo" },
-  { id: "issues", label: "Find issues" },
-  { id: "bug", label: "Bug report" },
-  { id: "pr", label: "PR helper" },
-] as const satisfies ReadonlyArray<{ id: TabId; label: string }>;
+  // Tab 0: Repo Explainer & Map
+  // Tab 1: Good-First-Issue Finder
+  // Tab 2: Screenshot -> Bug Report
+  // Tab 3: PR Description & Rules Helper
+  // Tab 4: Executive Dossier & PDF Export
+  const [activeTab, setActiveTab] = useState<number>(0);
 
-function safeRepoRef(input: string): T.RepoRef | null {
-  try {
-    return input.trim() ? parseRepoUrl(input) : null;
-  } catch {
-    return null;
-  }
-}
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isProcessingScreenshot, setIsProcessingScreenshot] = useState<boolean>(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
-export default function HomePage() {
-  const [tab, setTab] = useState<TabId>("explain");
-  const [language, setLanguage] = useState<T.Language>("en");
-  const [models, setModels] = useState<T.GemmaModelInfo[]>([]);
-  const [model, setModel] = useState("");
-  const [repoUrl, setRepoUrl] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [notes, setNotes] = useState("");
-  const [diff, setDiff] = useState("");
-  const [bugRepo, setBugRepo] = useState<T.RepoRef | null>(null);
+  const [settings, setSettings] = useState<AppSettings>({
+    geminiApiKey: "",
+    githubToken: "",
+    gemmaModel: "gemma-4-26b-a4b-it",
+  });
 
-  const explain = useApiRequest<T.ExplainResult>();
-  const issues = useApiRequest<T.IssuesData>();
-  const bug = useApiRequest<T.BugReportResult>();
-  const pr = useApiRequest<T.PrResult>();
-
+  // Load stored settings and check query params on mount
   useEffect(() => {
-    let active = true;
-    void getJson<T.ModelsData>("/api/models").then((response) => {
-      if (!active || !response.ok) return;
-      setModels(response.data.models);
-      setModel(response.data.defaultModel);
-    });
-    return () => {
-      active = false;
-    };
+    try {
+      const stored = localStorage.getItem("gitcompass_settings");
+      if (stored) {
+        setSettings(JSON.parse(stored));
+      }
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("view") === "workspace") {
+          setViewMode("workspace");
+        }
+        const target = params.get("repo") || params.get("url");
+        if (target) {
+          setRepoUrl(target);
+          handleAnalyzeRepo(target);
+        }
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
-  const options = { language, ...(model ? { model } : {}) };
-  const repo = repoUrl.trim() ? { repoUrl: repoUrl.trim() } : {};
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (tab === "explain") {
-      void explain.run(() => postJson("/api/explain", { ...repo, ...options }));
-    } else if (tab === "issues") {
-      void issues.run(() => postJson("/api/issues", { ...repo, ...options }));
-    } else if (tab === "pr") {
-      void pr.run(() => postJson("/api/pr", { diff, ...repo, ...options }));
-    } else if (image) {
-      const form = new FormData();
-      form.set("image", image);
-      form.set("notes", notes);
-      form.set("repoUrl", repoUrl.trim());
-      form.set("language", language);
-      if (model) form.set("model", model);
-      setBugRepo(safeRepoRef(repoUrl));
-      void bug.run(() => postForm("/api/bug-report", form));
+  const handleSaveSettings = (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    try {
+      localStorage.setItem("gitcompass_settings", JSON.stringify(newSettings));
+    } catch {
+      // ignore
     }
-  }
+  };
 
-  const loading = [explain, issues, bug, pr].some((r) => r.state.status === "loading");
-  const repoRequired = tab === "explain" || tab === "issues";
-  const submitLabel = {
-    explain: "Explain this repo",
-    issues: "Find beginner issues",
-    bug: "Write bug report",
-    pr: "Write PR description",
-  }[tab];
+  const handleLaunchWorkspace = (targetRepo?: string, initialTab?: number) => {
+    const chosenRepo = targetRepo || repoUrl;
+    setRepoUrl(chosenRepo);
+
+    if (typeof initialTab === "number") {
+      setActiveTab(initialTab);
+    }
+    setViewMode("workspace");
+
+    handleAnalyzeRepo(chosenRepo);
+
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleAnalyzeRepo = async (targetUrl?: string) => {
+    const url = targetUrl || repoUrl;
+    setIsAnalyzing(true);
+    setLoadingStep("[1/3 Querying GitHub REST API & Checking CONTRIBUTING.md...]");
+
+    const timer1 = setTimeout(() => {
+      setLoadingStep("[2/3 Running Google Gemma 4 Inference & Synthesizing Subsystems...]");
+    }, 450);
+
+    const timer2 = setTimeout(() => {
+      setLoadingStep("[3/3 Correlating AST Graph & Generating Dynamic Blueprint...]");
+    }, 900);
+
+    try {
+      const res = await fetch("/api/analyze-repo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repoUrl: url,
+          geminiApiKey: settings.geminiApiKey,
+          githubToken: settings.githubToken,
+          gemmaModel: settings.gemmaModel,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        if (data.metadata) setMetadata(data.metadata);
+        if (data.directories && data.directories.length > 0) setDirectories(data.directories);
+        if (data.recommendedFiles && data.recommendedFiles.length > 0) setRecommendedFiles(data.recommendedFiles);
+        if (data.issues && data.issues.length > 0) setIssues(data.issues);
+        if (data.architectureMap) setArchitectureMap(data.architectureMap);
+      }
+    } catch (err) {
+      console.warn("Failed to analyze repo, active state preserved:", err);
+    } finally {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      setIsAnalyzing(false);
+      setLoadingStep("");
+    }
+  };
+
+  const handleRerunGemmaAnalysis = async (
+    contextOverride?: string,
+    imageBase64?: string
+  ) => {
+    setIsProcessingScreenshot(true);
+    setLoadingStep("[1/3 Ingesting Screenshot OCR & Callstack...]");
+
+    const timer1 = setTimeout(() => {
+      setLoadingStep("[2/3 Running Gemma 4 Multimodal Vision Inference...]");
+    }, 450);
+
+    const timer2 = setTimeout(() => {
+      setLoadingStep("[3/3 Correlating AST Culprits & Formatting Report...]");
+    }, 900);
+
+    try {
+      const res = await fetch("/api/screenshot-to-bug", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          context: contextOverride || report.reproducerContext,
+          imageBase64,
+          geminiApiKey: settings.geminiApiKey,
+          gemmaModel: settings.gemmaModel,
+          fileName: report.screenshotName,
+          repoUrl,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.report) {
+        setReport(data.report);
+      }
+    } catch (err) {
+      console.warn("Failed to re-run Gemma analysis:", err);
+    } finally {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      setIsProcessingScreenshot(false);
+      setLoadingStep("");
+    }
+  };
 
   return (
     <>
-      <Header
-        language={language}
-        onLanguageChange={setLanguage}
-        models={models}
-        model={model}
-        onModelChange={setModel}
-      />
-      <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-        <FeatureTabs tabs={TABS} active={tab} onChange={setTab} />
+      {viewMode === "landing" ? (
+        <LandingPage
+          onLaunchWorkspace={handleLaunchWorkspace}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
+      ) : (
+        <div className="min-h-screen flex flex-col bg-zinc-50 text-zinc-950 font-sans antialiased">
+          {/* ZONE A: Global Header */}
+          <Header
+            repoUrl={repoUrl}
+            setRepoUrl={setRepoUrl}
+            onAnalyze={handleAnalyzeRepo}
+            isAnalyzing={isAnalyzing}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onBackToLanding={() => setViewMode("landing")}
+          />
 
-        <form
-          id={`panel-${tab}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${tab}`}
-          onSubmit={submit}
-          className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
-        >
-          <RepoInput value={repoUrl} onChange={setRepoUrl} required={repoRequired} />
+          <div className="flex-1 flex overflow-hidden">
+            {/* ZONE B: Left Sidebar */}
+            <Sidebar
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onBackToLanding={() => setViewMode("landing")}
+            />
 
-          {tab === "bug" && (
-            <>
-              <ImageUpload file={image} onChange={setImage} />
-              <div>
-                <label htmlFor="notes" className="mb-1 block text-sm font-medium">
-                  Notes{" "}
-                  <span className="font-normal text-slate-600 dark:text-slate-400">
-                    (optional: what were you doing?)
-                  </span>
-                </label>
-                <textarea
-                  id="notes"
-                  rows={3}
-                  maxLength={REQUEST_LIMITS.maxNotesChars}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className={INPUT_CLASS}
-                />
+            {/* Main Workspace Area */}
+            <main className="flex-1 flex flex-col overflow-y-auto">
+              {/* ZONE C: Telemetry Strip & Tab Bar */}
+              <TelemetryStrip
+                metadata={metadata}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                isLoading={isAnalyzing || isProcessingScreenshot}
+                loadingStep={loadingStep}
+              />
+
+              {/* TAB CONTENTS */}
+              <div className="flex-1">
+                {activeTab === 0 && (
+                  <RepoExplainerTab
+                    metadata={metadata}
+                    directories={directories}
+                    recommendedFiles={recommendedFiles}
+                    architectureMap={architectureMap}
+                  />
+                )}
+
+                {activeTab === 1 && (
+                  <GoodFirstIssueTab issues={issues} metadata={metadata} />
+                )}
+
+                {activeTab === 2 && (
+                  <BugReportTab
+                    report={report}
+                    setReport={setReport}
+                    metadata={metadata}
+                    onRerun={handleRerunGemmaAnalysis}
+                    isProcessing={isProcessingScreenshot}
+                  />
+                )}
+
+                {activeTab === 3 && <PRHelperTab metadata={metadata} />}
+
+                {activeTab === 4 && (
+                  <PdfReportTab
+                    metadata={metadata}
+                    directories={directories}
+                    recommendedFiles={recommendedFiles}
+                    issues={issues}
+                    bugReport={report}
+                    architectureMap={architectureMap}
+                  />
+                )}
               </div>
-            </>
-          )}
-          {tab === "pr" && <DiffInput value={diff} onChange={setDiff} />}
+            </main>
+          </div>
+        </div>
+      )}
 
-          <Button type="submit" loading={loading} disabled={tab === "bug" && !image}>
-            {submitLabel}
-          </Button>
-        </form>
-
-        <section aria-label="Result" lang={language}>
-          {tab === "explain" && (
-            <RequestStatus
-              state={explain.state}
-              idleHint="Paste a repository and get a beginner-friendly tour of it."
-              render={(data) => <ExplainerResult result={data} />}
-            />
-          )}
-          {tab === "issues" && (
-            <RequestStatus
-              state={issues.state}
-              idleHint="Find open issues that suit a first contribution, easiest first."
-              render={(data) => <IssueList data={data} />}
-            />
-          )}
-          {tab === "bug" && (
-            <RequestStatus
-              state={bug.state}
-              idleHint="Upload a screenshot of an error or broken UI to get a ready-to-file issue."
-              render={(data) => <BugReportResult report={data} repo={bugRepo} />}
-            />
-          )}
-          {tab === "pr" && (
-            <RequestStatus
-              state={pr.state}
-              idleHint="Paste your diff to get a clear PR title and description."
-              render={(data) => <PrResult result={data} />}
-            />
-          )}
-        </section>
-      </main>
-      <Footer />
+      {/* Settings Modal (accessible from both Landing Page and Workspace) */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onSave={handleSaveSettings}
+      />
     </>
   );
 }
