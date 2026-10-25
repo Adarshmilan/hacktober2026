@@ -20,15 +20,17 @@ const envSchema = z.object({
     z.string().min(1).optional(),
   ),
   GEMMA_MODEL: z.preprocess(
-    // The models API prints names as "models/gemma-...", so accept that form too.
     (value) => {
       const blank = blankToUndefined(value);
-      return typeof blank === "string" ? blank.trim().replace(/^models\//, "") : "gemma-4-26b-a4b-it";
+      return typeof blank === "string" ? blank.trim().replace(/^models\//, "") : "gemma4:e2b";
     },
     z
       .string()
-      .regex(/^gemma-[a-z0-9.-]+$/, "GEMMA_MODEL must be a Gemma model name like gemma-x-yb-it.")
-      .default("gemma-4-26b-a4b-it"),
+      .default("gemma4:e2b"),
+  ),
+  OLLAMA_BASE_URL: z.preprocess(
+    blankToUndefined,
+    z.string().default("http://localhost:11434"),
   ),
   GITHUB_TOKEN: z.preprocess(blankToUndefined, z.string().min(1).optional()),
   MAX_IMAGE_MB: z.preprocess(blankToUndefined, z.coerce.number().positive().max(20).default(4)),

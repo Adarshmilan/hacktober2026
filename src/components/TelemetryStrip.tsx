@@ -54,7 +54,7 @@ export function TelemetryStrip({
             </span>
           </div>
           <span className="text-[10px] text-zinc-400 font-mono font-medium">
-            ● GOOGLE GEMMA 4 INFERENCE TELEMETRY
+            ● LOCAL GEMMA 4 (gemma4:e2b via Ollama) INFERENCE
           </span>
         </div>
       )}

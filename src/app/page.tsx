@@ -53,7 +53,7 @@ export default function Home() {
   const [settings, setSettings] = useState<AppSettings>({
     geminiApiKey: "",
     githubToken: "",
-    gemmaModel: "gemma-4-26b-a4b-it",
+    gemmaModel: "gemma4:e2b",
   });
 
   // Load stored settings and check query params on mount
@@ -61,7 +61,11 @@ export default function Home() {
     try {
       const stored = localStorage.getItem("gitcompass_settings");
       if (stored) {
-        setSettings(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (!parsed.gemmaModel || parsed.gemmaModel === "gemma-4-26b-a4b-it") {
+          parsed.gemmaModel = "gemma4:e2b";
+        }
+        setSettings(parsed);
       }
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);

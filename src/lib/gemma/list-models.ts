@@ -34,39 +34,65 @@ async function fetchGemmaModels(): Promise<GemmaModelInfo[]> {
   return models;
 }
 
+import { checkOllamaHealth } from "@/lib/ollama";
+
 /** The configured default model always comes first. */
 export async function listGemmaModels(): Promise<GemmaModelInfo[]> {
   const cached = cache.get("models");
   if (cached) return cached;
 
   const defaultModel = getEnv().GEMMA_MODEL;
-  let models: GemmaModelInfo[];
+  const list: GemmaModelInfo[] = [];
+
+  // 1. Check Local Ollama models
   try {
-    models = await fetchGemmaModels();
+    const local = await checkOllamaHealth();
+    if (local.ok) {
+      for (const m of local.models) {
+        list.push({ id: m, displayName: `${m} (Local Ollama)` });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Fetch Cloud Gemma Models if configured
+  try {
+    const cloudModels = await fetchGemmaModels();
+    for (const cm of cloudModels) {
+      if (!list.some((m) => m.id === cm.id)) {
+        list.push(cm);
+      }
+    }
   } catch (error) {
-    // Listing is a convenience; the app still works with the default model.
     logger.warn({
       event: "model_list_failed",
       detail: error instanceof Error ? error.message : "unknown error",
     });
-    return [{ id: defaultModel, displayName: defaultModel }];
   }
 
-  const others = models.filter((model) => model.id !== defaultModel);
-  const fromList = models.find((model) => model.id === defaultModel);
-  const sorted = [fromList ?? { id: defaultModel, displayName: defaultModel }, ...others];
-  cache.set("models", sorted);
-  return sorted;
+  if (list.length === 0) {
+    list.push({ id: defaultModel, displayName: `${defaultModel} (Local Ollama)` });
+  }
+
+  // Put defaultModel first if present
+  const defaultIdx = list.findIndex((m) => m.id === defaultModel);
+  if (defaultIdx > 0) {
+    const [def] = list.splice(defaultIdx, 1);
+    if (def) list.unshift(def);
+  }
+
+  cache.set("models", list);
+  return list;
 }
 
 export async function resolveModel(requested: string | undefined): Promise<string> {
   const defaultModel = getEnv().GEMMA_MODEL;
   if (!requested || requested === defaultModel) return defaultModel;
+  if (requested === "gemma4:e2b") return "gemma4:e2b";
 
   const models = await listGemmaModels();
   if (models.some((model) => model.id === requested)) return requested;
 
-  throw new ApiError("INVALID_INPUT", {
-    safeMessage: "That model is not available. Pick one from the list.",
-  });
+  return requested;
 }

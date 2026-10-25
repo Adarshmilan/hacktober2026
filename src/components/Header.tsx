@@ -117,11 +117,11 @@ export function Header({
         <button
           onClick={onOpenSettings}
           className="bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 px-3 py-1.5 rounded-full flex items-center gap-2 text-xs text-zinc-700 transition-colors cursor-pointer"
-          title="Click to configure Gemini API Key and Gemma model"
+          title="Click to configure Local Ollama or Gemini model"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span className="font-medium text-[11px]">
-            Model: Google Gemma 4 (Multimodal) · API Ready
+            Engine: Local Gemma 4 (gemma4:e2b via Ollama) · Ready
           </span>
         </button>
 

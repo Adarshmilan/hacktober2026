@@ -1,4 +1,4 @@
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import {
   BugReportDraft,
   ASTNodeMatch,
@@ -8,6 +8,7 @@ import {
   PRDraft,
   ArchitectureMapData,
 } from "@/types";
+import { generateWithOllama, checkOllamaHealth } from "@/lib/ollama";
 
 export function getGeminiClient(customApiKey?: string): GoogleGenAI | null {
   const apiKey = customApiKey || process.env.GEMINI_API_KEY;
@@ -21,7 +22,7 @@ export function getGeminiClient(customApiKey?: string): GoogleGenAI | null {
 }
 
 export function getGemmaModel(customModel?: string): string {
-  const raw = customModel || process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it";
+  const raw = customModel || process.env.GEMMA_MODEL || "gemma4:e2b";
   return raw.replace(/^models\//, "");
 }
 
@@ -29,7 +30,7 @@ export function getGemmaModel(customModel?: string): string {
  * Clean and extract JSON from model reply (removes markdown backticks and wraps)
  */
 export function extractCleanJson<T>(rawText: string): T {
-  const unfenced = rawText.replace(/```(?:json)?/gi, "").trim();
+  const unfenced = rawText.replace(/\`\`\`(?:json)?/gi, "").trim();
   const start = unfenced.indexOf("{");
   const end = unfenced.lastIndexOf("}");
   if (start === -1 || end <= start) {
@@ -45,7 +46,7 @@ export function extractCleanJson<T>(rawText: string): T {
 }
 
 /**
- * Multimodal Visual Bug Triage using Google Gemma 4 Vision via Gemini API
+ * Multimodal Visual Bug Triage using Local Gemma 4 via Ollama or Google Gemini API
  */
 export async function analyzeScreenshotWithGemma({
   imageBase64,
@@ -64,9 +65,7 @@ export async function analyzeScreenshotWithGemma({
   repoTree?: string[];
   contributing?: string;
 }): Promise<BugReportDraft | null> {
-  const ai = getGeminiClient(apiKey);
   const model = getGemmaModel(modelName);
-
   const fileTreeSample = repoTree.slice(0, 100).join("\n");
 
   const prompt = `You are Google Gemma 4, an elite software debugging and open-source issue triage agent.
@@ -121,43 +120,65 @@ Output STRICT JSON with this exact schema (no additional markdown text, no code 
   ]
 }`;
 
-  if (!ai || !imageBase64) {
-    return null;
-  }
+  if (!imageBase64) return null;
 
+  // 1. Try Local Ollama First
   try {
-    const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
-    const res = await ai.models.generateContent({
-      model,
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: cleanBase64,
-              },
-            },
-          ],
-        },
-      ],
-      config: {
-        temperature: 0.1,
-        maxOutputTokens: 2500,
-      },
-    });
-
-    return extractCleanJson<BugReportDraft>(res.text || "");
+    const ollamaCheck = await checkOllamaHealth();
+    if (ollamaCheck.ok) {
+      const targetLocalModel = model.includes("gemma") ? model : "gemma4:e2b";
+      const ollamaRes = await generateWithOllama({
+        model: targetLocalModel,
+        prompt,
+        images: [imageBase64],
+        format: "json",
+      });
+      if (ollamaRes && ollamaRes.trim()) {
+        return extractCleanJson<BugReportDraft>(ollamaRes);
+      }
+    }
   } catch (err) {
-    console.warn("Gemma analyzeScreenshot error:", err);
-    return null;
+    console.warn("Local Ollama analysis skipped or failed:", err);
   }
+
+  // 2. Fallback to Cloud Gemini API
+  const ai = getGeminiClient(apiKey);
+  if (ai) {
+    try {
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
+      const res = await ai.models.generateContent({
+        model: model.includes("gemma4:e2b") ? "gemma-4-26b-a4b-it" : model,
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType,
+                  data: cleanBase64,
+                },
+              },
+            ],
+          },
+        ],
+        config: {
+          temperature: 0.1,
+          maxOutputTokens: 2500,
+        },
+      });
+
+      return extractCleanJson<BugReportDraft>(res.text || "");
+    } catch (err) {
+      console.warn("Cloud Gemini analyzeScreenshot error:", err);
+    }
+  }
+
+  return null;
 }
 
 /**
- * Live Gemma 4 Repository Explainer & Map
+ * Live Gemma 4 Repository Explainer & Map (Local Ollama or Cloud Gemini)
  */
 export async function explainRepoWithGemma({
   owner,
@@ -178,9 +199,6 @@ export async function explainRepoWithGemma({
   recommendedFiles: RecommendedFile[];
   architectureMap?: ArchitectureMapData;
 } | null> {
-  const ai = getGeminiClient(apiKey);
-  if (!ai) return null;
-
   const model = getGemmaModel(modelName);
   const prompt = `You are Google Gemma 4. Analyze the architecture of open-source repository ${owner}/${repo}.
 
@@ -241,24 +259,47 @@ Return STRICT JSON with:
 }
 Return only valid JSON. No markdown fences.`;
 
+  // 1. Try Local Ollama First
   try {
-    const res = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0.2,
-        maxOutputTokens: 3500,
-      },
-    });
-    return extractCleanJson(res.text || "");
+    const ollamaCheck = await checkOllamaHealth();
+    if (ollamaCheck.ok) {
+      const targetLocalModel = model.includes("gemma") ? model : "gemma4:e2b";
+      const ollamaRes = await generateWithOllama({
+        model: targetLocalModel,
+        prompt,
+        format: "json",
+      });
+      if (ollamaRes && ollamaRes.trim()) {
+        return extractCleanJson(ollamaRes);
+      }
+    }
   } catch (err) {
-    console.warn("Gemma explainRepo error:", err);
-    return null;
+    console.warn("Local Ollama explainRepo skipped or failed:", err);
   }
+
+  // 2. Fallback to Cloud Gemini API
+  const ai = getGeminiClient(apiKey);
+  if (ai) {
+    try {
+      const res = await ai.models.generateContent({
+        model: model.includes("gemma4:e2b") ? "gemma-4-26b-a4b-it" : model,
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+          maxOutputTokens: 3500,
+        },
+      });
+      return extractCleanJson(res.text || "");
+    } catch (err) {
+      console.warn("Cloud Gemini explainRepo error:", err);
+    }
+  }
+
+  return null;
 }
 
 /**
- * Live Gemma 4 Good First Issue Ranker
+ * Live Gemma 4 Good First Issue Ranker (Local Ollama or Cloud Gemini)
  */
 export async function rankIssuesWithGemma({
   owner,
@@ -275,9 +316,6 @@ export async function rankIssuesWithGemma({
   apiKey?: string;
   modelName?: string;
 }): Promise<GoodFirstIssue[] | null> {
-  const ai = getGeminiClient(apiKey);
-  if (!ai || issues.length === 0) return null;
-
   const model = getGemmaModel(modelName);
   const formattedIssues = issues.slice(0, 10).map((i) => ({
     number: i.number,
@@ -314,48 +352,84 @@ Return STRICT JSON array:
 ]
 Return only valid JSON.`;
 
+  // 1. Try Local Ollama First
   try {
-    const res = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0.2,
-        maxOutputTokens: 3000,
-      },
-    });
-
-    const parsed = extractCleanJson<any[]>(res.text || "");
-    if (!Array.isArray(parsed)) return null;
-
-    return parsed.map((item, idx) => {
-      const orig = issues.find((i) => i.number === item.number) || issues[idx] || {};
-      return {
-        id: orig.id || 1000 + idx,
-        number: orig.number || item.number || idx + 1,
-        title: orig.title || "Open Community Issue",
-        htmlUrl: orig.html_url || `https://github.com/${owner}/${repo}/issues/${item.number || idx + 1}`,
-        difficulty: item.difficulty || "1/5 (Beginner)",
-        clarityScore: item.clarityScore || 90,
-        isUnlabeledGem: Boolean(item.isUnlabeledGem),
-        category: item.category || "Frontend",
-        plainExplanation: item.plainExplanation || orig.body?.slice(0, 200) || "Opportunity to resolve an open issue.",
-        suspectedFiles: item.suspectedFiles || fileTree.slice(0, 2),
-        starterSteps: item.starterSteps || [
-          "Locate relevant source file in directory.",
-          "Implement required adjustment and write tests.",
-          "Open pull request with fix.",
-        ],
-        labels: (orig.labels || []).map((l: any) => (typeof l === "string" ? l : l.name)),
-      };
-    });
+    const ollamaCheck = await checkOllamaHealth();
+    if (ollamaCheck.ok) {
+      const targetLocalModel = model.includes("gemma") ? model : "gemma4:e2b";
+      const ollamaRes = await generateWithOllama({
+        model: targetLocalModel,
+        prompt,
+        format: "json",
+      });
+      if (ollamaRes && ollamaRes.trim()) {
+        const parsed = extractCleanJson<any[]>(ollamaRes);
+        if (Array.isArray(parsed)) {
+          return mapIssuesOutput(parsed, issues, owner, repo, fileTree);
+        }
+      }
+    }
   } catch (err) {
-    console.warn("Gemma rankIssues error:", err);
-    return null;
+    console.warn("Local Ollama rankIssues skipped or failed:", err);
   }
+
+  // 2. Fallback to Cloud Gemini API
+  const ai = getGeminiClient(apiKey);
+  if (ai) {
+    try {
+      const res = await ai.models.generateContent({
+        model: model.includes("gemma4:e2b") ? "gemma-4-26b-a4b-it" : model,
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+          maxOutputTokens: 3000,
+        },
+      });
+
+      const parsed = extractCleanJson<any[]>(res.text || "");
+      if (Array.isArray(parsed)) {
+        return mapIssuesOutput(parsed, issues, owner, repo, fileTree);
+      }
+    } catch (err) {
+      console.warn("Cloud Gemini rankIssues error:", err);
+    }
+  }
+
+  return null;
+}
+
+function mapIssuesOutput(
+  parsed: any[],
+  issues: any[],
+  owner: string,
+  repo: string,
+  fileTree: string[]
+): GoodFirstIssue[] {
+  return parsed.map((item, idx) => {
+    const orig = issues.find((i) => i.number === item.number) || issues[idx] || {};
+    return {
+      id: orig.id || 1000 + idx,
+      number: orig.number || item.number || idx + 1,
+      title: orig.title || "Open Community Issue",
+      htmlUrl: orig.html_url || `https://github.com/${owner}/${repo}/issues/${item.number || idx + 1}`,
+      difficulty: item.difficulty || "1/5 (Beginner)",
+      clarityScore: item.clarityScore || 90,
+      isUnlabeledGem: Boolean(item.isUnlabeledGem),
+      category: item.category || "Frontend",
+      plainExplanation: item.plainExplanation || orig.body?.slice(0, 200) || "Opportunity to resolve an open issue.",
+      suspectedFiles: item.suspectedFiles || fileTree.slice(0, 2),
+      starterSteps: item.starterSteps || [
+        "Locate relevant source file in directory.",
+        "Implement required adjustment and write tests.",
+        "Open pull request with fix.",
+      ],
+      labels: (orig.labels || []).map((l: any) => (typeof l === "string" ? l : l.name)),
+    };
+  });
 }
 
 /**
- * Live Gemma 4 PR Helper
+ * Live Gemma 4 PR Helper (Local Ollama or Cloud Gemini)
  */
 export async function generatePRWithGemma({
   owner,
@@ -372,9 +446,6 @@ export async function generatePRWithGemma({
   apiKey?: string;
   modelName?: string;
 }): Promise<PRDraft | null> {
-  const ai = getGeminiClient(apiKey);
-  if (!ai) return null;
-
   const model = getGemmaModel(modelName);
   const prompt = `You are Google Gemma 4. Evaluate this git diff for repository ${owner}/${repo} and write a clean, compliant PR title & description.
 
@@ -418,18 +489,41 @@ Return STRICT JSON with:
 }
 Return only JSON.`;
 
+  // 1. Try Local Ollama First
   try {
-    const res = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0.2,
-        maxOutputTokens: 2500,
-      },
-    });
-    return extractCleanJson<PRDraft>(res.text || "");
+    const ollamaCheck = await checkOllamaHealth();
+    if (ollamaCheck.ok) {
+      const targetLocalModel = model.includes("gemma") ? model : "gemma4:e2b";
+      const ollamaRes = await generateWithOllama({
+        model: targetLocalModel,
+        prompt,
+        format: "json",
+      });
+      if (ollamaRes && ollamaRes.trim()) {
+        return extractCleanJson<PRDraft>(ollamaRes);
+      }
+    }
   } catch (err) {
-    console.warn("Gemma generatePR error:", err);
-    return null;
+    console.warn("Local Ollama generatePR skipped or failed:", err);
   }
+
+  // 2. Fallback to Cloud Gemini API
+  const ai = getGeminiClient(apiKey);
+  if (ai) {
+    try {
+      const res = await ai.models.generateContent({
+        model: model.includes("gemma4:e2b") ? "gemma-4-26b-a4b-it" : model,
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+          maxOutputTokens: 2500,
+        },
+      });
+      return extractCleanJson<PRDraft>(res.text || "");
+    } catch (err) {
+      console.warn("Cloud Gemini generatePR error:", err);
+    }
+  }
+
+  return null;
 }

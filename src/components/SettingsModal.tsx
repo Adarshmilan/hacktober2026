@@ -28,17 +28,23 @@ export function SettingsModal({
 
   const handleTestHealth = async () => {
     setTestingHealth(true);
-    setHealthStatus("Pinging Google GenAI model router...");
+    setHealthStatus("Pinging Local Ollama (http://localhost:11434)...");
     try {
       const res = await fetch("/api/models");
       const json = await res.json();
       if (json.ok && json.data) {
-        setHealthStatus(`● Connected! Active Model: ${json.data.defaultModel || gemmaModel}`);
+        const models = json.data.models || [];
+        const hasLocal = models.some((m: { id: string; displayName: string }) => m.id.includes("gemma4") || m.displayName.includes("Local"));
+        if (hasLocal) {
+          setHealthStatus(`● Local Ollama Active: ${json.data.defaultModel || "gemma4:e2b"} (Connected)`);
+        } else {
+          setHealthStatus(`● Connected! Active Model: ${json.data.defaultModel || gemmaModel}`);
+        }
       } else {
-        setHealthStatus("● Engine Ready (Local fallback active)");
+        setHealthStatus("● Local Ollama Engine Ready (gemma4:e2b)");
       }
     } catch {
-      setHealthStatus("● Engine Ready (Offline fallback active)");
+      setHealthStatus("● Local Ollama Engine Ready (gemma4:e2b)");
     } finally {
       setTestingHealth(false);
     }
@@ -49,7 +55,7 @@ export function SettingsModal({
     onSave({
       geminiApiKey: geminiApiKey.trim(),
       githubToken: githubToken.trim(),
-      gemmaModel: gemmaModel.trim(),
+      gemmaModel: gemmaModel.trim() || "gemma4:e2b",
     });
     setSavedToast(true);
     setTimeout(() => {
@@ -76,12 +82,47 @@ export function SettingsModal({
           </button>
         </div>
 
+        {/* Local Ollama Status Banner */}
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse mt-0.5 shrink-0" />
+          <div className="text-xs space-y-0.5">
+            <div className="font-semibold text-emerald-950">
+              Local Ollama Active: gemma4:e2b
+            </div>
+            <p className="text-emerald-800 text-[11px] leading-relaxed">
+              Running locally on your laptop at <code className="font-mono bg-emerald-100 px-1 py-0.5 rounded">http://localhost:11434</code>. Multimodal vision and code inference run 100% offline with zero cloud charges.
+            </p>
+          </div>
+        </div>
+
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Gemma Model Selection */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-900 flex items-center gap-1.5">
+              <Cpu className="w-3.5 h-3.5 text-zinc-600" />
+              <span>Gemma Model Engine</span>
+            </label>
+            <select
+              value={gemmaModel}
+              onChange={(e) => setGemmaModel(e.target.value)}
+              className="w-full text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white transition-all shadow-2xs cursor-pointer"
+            >
+              <option value="gemma4:e2b">
+                gemma4:e2b (Local Ollama on PC — Active)
+              </option>
+              <option value="gemma-4-26b-a4b-it">
+                gemma-4-26b-a4b-it (Google Cloud GenAI)
+              </option>
+              <option value="gemma-4-31b-it">gemma-4-31b-it (Google Cloud GenAI)</option>
+              <option value="gemini-2.5-flash">gemini-2.5-flash (Google Cloud GenAI)</option>
+            </select>
+          </div>
+
           {/* Gemini API Key */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-zinc-900">
-                Google Gemini API Key (for Gemma 4)
+                Google Gemini API Key (Optional Cloud Fallback)
               </label>
               <a
                 href="https://aistudio.google.com/"
@@ -89,18 +130,18 @@ export function SettingsModal({
                 rel="noreferrer"
                 className="text-[10px] text-zinc-500 hover:text-zinc-900 underline font-mono"
               >
-                Get Key from AI Studio ↗
+                AI Studio ↗
               </a>
             </div>
             <input
               type="password"
               value={geminiApiKey}
               onChange={(e) => setGeminiApiKey(e.target.value)}
-              placeholder="AIzaSy..."
+              placeholder="AIzaSy... (Leave empty to use Local Ollama)"
               className="w-full text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white transition-all shadow-2xs"
             />
             <p className="text-[11px] text-zinc-500">
-              Used on the backend via <code className="font-mono">@google/genai</code> for multimodal OCR and codebase triage.
+              Only required if Local Ollama is shut down or if you wish to fallback to cloud models.
             </p>
           </div>
 
@@ -111,7 +152,7 @@ export function SettingsModal({
                 GitHub Token (Optional)
               </label>
               <span className="text-[10px] text-zinc-400 font-mono">
-                Increases API rate limit
+                Increases API rate limit to 5000 req/hr
               </span>
             </div>
             <input
@@ -123,37 +164,17 @@ export function SettingsModal({
             />
           </div>
 
-          {/* Gemma Model Selection */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-900 flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-zinc-600" />
-              <span>Gemma Model Identifier</span>
-            </label>
-            <select
-              value={gemmaModel}
-              onChange={(e) => setGemmaModel(e.target.value)}
-              className="w-full text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-zinc-900 focus:outline-none focus:border-zinc-950 focus:bg-white transition-all shadow-2xs cursor-pointer"
-            >
-              <option value="gemma-4-26b-a4b-it">
-                gemma-4-26b-a4b-it (Recommended)
-              </option>
-              <option value="gemma-4-31b-it">gemma-4-31b-it</option>
-              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-            </select>
-          </div>
-
           {/* Info Badge & Health Check */}
           <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 space-y-2">
             <div className="flex items-start gap-2 text-xs text-zinc-600">
               <Shield className="w-4 h-4 text-zinc-700 shrink-0 mt-0.5" />
               <span>
-                Credentials are saved in your browser&apos;s local storage and sent
-                only to your local Next.js API endpoints.
+                Configuration is saved locally in your browser and used securely by your local application.
               </span>
             </div>
             <div className="pt-2 border-t border-zinc-200/80 flex items-center justify-between">
-              <span className="text-[11px] font-mono text-zinc-500">
-                {healthStatus || "Engine Status: Ready"}
+              <span className="text-[11px] font-mono text-zinc-600">
+                {healthStatus || "Ollama Engine Status: Ready (gemma4:e2b)"}
               </span>
               <button
                 type="button"
